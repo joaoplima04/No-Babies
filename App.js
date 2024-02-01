@@ -1,34 +1,107 @@
 // App.js
-import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, FlatList, StyleSheet, TouchableOpacity, Button, Switch } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { createContext } from 'react';
+import { View, Text, SafeAreaView, FlatList, StyleSheet, TouchableOpacity, Button, Switch, Alert } from 'react-native';
 import { format, setHours, setMinutes, addDays, differenceInDays, isWithinInterval } from 'date-fns';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { HeaderBackButton } from '@react-navigation/elements'
+
 
 const Stack = createStackNavigator();
+const CycleContext = createContext();
+
+
+// Hook para consumir o contexto
+const useCycle = () => {
+  return useContext(CycleContext);
+};
 
 const App = () => {
+  const [currentCycle, setCurrentCycle] = useState(null);
+
   return (
+    <CycleContext.Provider value={{ currentCycle, setCurrentCycle }}>
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Confirm" component={ConfirmScreen} />
+        <Stack.Screen name="Home" component={HomeScreen}/>
+        <Stack.Screen name="Configure seu ciclo" component={ConfigureCicle} />
+        <Stack.Screen
+          name="Ciclo atual"
+          component={ConfirmScreen}
+          options={({ navigation }) => ({
+          title: 'Ciclo atual',
+          headerLeft: () => (
+        <HeaderBackButton
+          onPress={() => {
+            // Personalize o comportamento do botão Voltar conforme necessário
+            navigation.navigate('Home');
+          }}
+      />
+    ),
+  })}
+/>
       </Stack.Navigator>
     </NavigationContainer>
+    </CycleContext.Provider>
   );
 };
 
 const HomeScreen = () => {
+  const { currentCycle, setCurrentCycle } = useContext(CycleContext);
+
+  const cycle = useCycle();
+
+  const navigation = useNavigation();
+
+  const handleNovoCiclo = () => {
+    navigation.navigate('Configure seu ciclo')
+  } 
+
+  const checkCycleInfo = () => {
+    if (!cycle) {
+      return Alert.alert('Você ainda não configurou nenhum ciclo, clique em Novo ciclo');
+    }
+
+    // Navegue para a tela do ciclo atual
+    navigation.navigate('Ciclo atual', { cycle: currentCycle });
+  }
+
+  return (
+    <SafeAreaView style={styles.HomeContainer}>
+      <Text style={styles.tituloHome}>
+        No Babies
+      </Text>
+      <View style={styles.HomeButaoContainer}>
+      <TouchableOpacity style={styles.butao} onPress={handleNovoCiclo}>
+        <Text style={styles.butaoTexto}>Novo ciclo</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.butao} onPress={checkCycleInfo}>
+        <Text style={styles.butaoTexto}>Ciclo atual</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.butao}>
+        <Text style={styles.butaoTexto}>Ciclos anteriores</Text>
+      </TouchableOpacity>
+      </View>
+      
+    </SafeAreaView>
+
+
+  );
+
+};
+
+const ConfigureCicle = ( {cycle} ) => {
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
   const [mode, setMode] = useState('date');
   const [show, setShow] = useState(false);
   const [formattedDate, setFormattedDate] = useState('');
-
   const navigation = useNavigation();
-
+  const CycleContext = createContext();
+  
   useEffect(() => {
     setFormattedDate(format(date, 'dd/MM/yyyy'));
   }, [date]);
@@ -64,15 +137,19 @@ const HomeScreen = () => {
   };
 
   const handleConfirm = () => {
+    setCurrentCycle({
+      startDate: format(date, 'dd/MM/yyyy'),
+      time: format(time, 'HH:mm'),
+    });
     // Navegue para a tela de confirmação e passe os dados como parâmetros
-    navigation.navigate('Confirm', {
+    navigation.navigate('Ciclo atual', {
       formattedDate: format(date, 'dd/MM/yyyy'),
       formattedTime: format(time, 'HH:mm'),
     });
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.configureContainer}>
       <Text style={styles.tituloMain}>
         Insira a data e o horário em que você começou seu ciclo
       </Text>
@@ -80,11 +157,11 @@ const HomeScreen = () => {
         <Button onPress={handleConfirm} title="Confirmar" />
       </View>
       <View style={styles.buttonContainer}>
-        <Button onPress={showDatepicker} title="Data"/>
+        <Button onPress={showDatepicker} title="Data" />
         <Button onPress={showTimepicker} title="Hora" />
       </View>
-      <Text>Data: {formattedDate}</Text>
-      <Text>Horário: {format(time, 'HH:mm')}</Text>
+      <Text style={styles.diaHora}>Data: {formattedDate}</Text>
+      <Text style={styles.diaHora}>Horário: {format(time, 'HH:mm')}</Text>
       {show && (
         <DateTimePicker
           testID="dateTimePicker"
@@ -100,6 +177,17 @@ const HomeScreen = () => {
 };
 
 const ConfirmScreen = ({ route }) => {
+  const navigation = useNavigation();
+
+  
+  // Retrieve the current cycle information from context
+  const { currentCycle } = useContext(CycleContext);
+
+  if (currentCycle) {
+    formattedDate: currentCycle.startDate
+    formattedTime: currentCycle.time
+  }
+
   const { formattedDate, formattedTime } = route.params;
 
   // Converta a data formatada para um formato reconhecido pelo construtor Date
@@ -120,7 +208,8 @@ const ConfirmScreen = ({ route }) => {
   if (isWithinInterval(today, { start: endDate, end: endOfInterval })) {
     // Se a data atual está dentro do intervalo, calcule quantos dias faltam até o final do intervalo
     const daysLeft = differenceInDays(endOfInterval, today);
-    intervalMessage = `Você está no seu intervalo, Faltam ${daysLeft} dias.`;
+    const currentIntervalDay = 7 - daysLeft;
+    intervalMessage = `Você está no ${currentIntervalDay}° dia do intervalo.`;
   }
 
   useEffect(() => {
@@ -133,6 +222,9 @@ const ConfirmScreen = ({ route }) => {
         formattedDate: format(day, 'dd/MM/yyyy'),
         taken: false, // Inicialmente, o remédio não foi tomado
         time: formattedTime, // Use o mesmo horário para todos os dias, ou ajuste conforme necessário
+        love: false,
+        loveMessage: '',
+        protection: ''
       };
     });
   
@@ -152,6 +244,52 @@ const ConfirmScreen = ({ route }) => {
     }
   };
 
+  const handleLoveSwitchChange = (id, newValue) => {
+    // Defina a mensagem com base no valor do switch
+    const loveMessage = newValue ? '  Amor foi feito' : '';
+  
+    // Atualize o estado quando o usuário marcar ou desmarcar o remédio
+    setMedicationData((prevData) =>
+      prevData.map((item) =>
+        item.id === id ? { ...item, love: newValue, loveMessage, style: newValue ? {backgroundColor: 'white', borderRadius: 0} : undefined,} : item,
+      )
+    );
+    if (newValue) {
+      // Exibe o pop-up
+      showAlert(id);
+    }
+  };
+
+  const showAlert = (id) => {
+    Alert.alert(
+      "Com ou sem proteção?",
+      "Fez amorzinho né safada? Mas me responde foi com ou sem proteção?",
+      [
+        {
+          text: "Com proteção",
+          onPress: () => {
+            setMedicationData((prevData) =>
+              prevData.map((item) =>
+                item.id === id ? { ...item, protection : 'Com Proteção', } : item
+              )
+            );
+          },
+        },
+        {
+          text: "Sem proteção",
+          onPress: () => {
+            setMedicationData((prevData) =>
+              prevData.map((item) =>
+                item.id === id ? { ...item, protection : 'Sem proteção', style: {backgroundColor: 'red', borderRadius: 5}, } : item
+              ),
+            );
+            },
+          },
+        ],
+      { cancelable: false } // Opcional: impede que o usuário feche o alerta clicando fora dele
+    );
+  };
+
   const handleTimeChange = (event, selectedTime) => {
     setShowTimePicker(false);
     setSelectedTime(selectedTime);
@@ -164,22 +302,30 @@ const ConfirmScreen = ({ route }) => {
   );
 };
 
-  const renderItem = ({ item }) => (
-  <View style={styles.listItem}>
-    <Text>{item.formattedDate}</Text>
-    <Text>  </Text>
-    {item.taken && <Text>{item.timeTaken}</Text>}
-    <Switch
-      value={item.taken}
-      onValueChange={(newValue) => handleSwitchChange(item.id, newValue)}
-    />
-  </View>
-);
+const renderItem = ({ item }) => {
+  return (
+    <View style={[styles.listItem, item.style]}>
+      <Text>{item.formattedDate}</Text>
+      <Text> </Text>
+
+      {item.taken && <Text>{item.timeTaken}</Text>}
+      <Switch
+        value={item.taken}
+        onValueChange={(newValue) => handleSwitchChange(item.id, newValue)}
+      />
+      <Switch
+        value={item.love}
+        onValueChange={(newValue) => handleLoveSwitchChange(item.id, newValue)}
+      />
+      <Text style={styles.loveText}>{item.loveMessage}</Text>
+    </View>
+  );
+};
 
 return (
-  <View style={styles.container}>
+  <View style={styles.configureContainer}>
     {intervalMessage ? (
-      <Text>{intervalMessage}</Text>
+      <Text style={styles.intervalo}>{intervalMessage}</Text>
     ) : (
       <>
         <Text style={styles.tituloDias}>Seu ciclo começou no dia {formattedDate} e vai até o dia {formattedEndDate}</Text>
@@ -210,7 +356,37 @@ return (
 
 
 const styles = StyleSheet.create({
-  container: {
+  HomeContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'top',
+    paddingTop: 50,
+  },
+  HomeButaoContainer: {
+    flex: 1,
+    flexDirection: 'colum',
+    justifyContent: 'space-between',
+    margin: 230,
+    bottom: 150,
+  },
+  tituloHome: {
+    left: 113,
+    width: 380,
+    fontSize: 30,
+  },
+  butao: {
+    width: 200,
+    height: 50,
+    backgroundColor: '#FF00FF',
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  butaoTexto: {
+    fontSize: 20
+  },
+  configureContainer: {
     flex: 1,
     backgroundColor: '#fff',
     alignItems: 'center',
@@ -249,21 +425,20 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ccc',
   },
   listaContainer: {
+    right: 15,
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
     position: 'relative',
-    right: 90,
     top: 50,
   },
-  listaContainer: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    position: 'relative',
-    right: 10,
-    top: 50,
+  intervalo: {
+    top: 100,
+    fontSize: 20,
   },
+  diaHora: {
+    fontSize: 20,
+  }
 });
 
 export default App;

@@ -65,7 +65,7 @@ const HomeScreen = () => {
     }
 
     // Navegue para a tela do ciclo atual
-    navigation.navigate('Ciclo atual', { cycle: currentCycle, setCurrentCycle });
+    navigation.navigate('Ciclo atual');
   }
 
   return (
@@ -203,7 +203,7 @@ const ConfirmScreen = ({ route }) => {
 
   // Converta a data formatada para um formato reconhecido pelo construtor Date
   // Verifique se formattedDate é uma string antes de usar o split
-  const [day, month, year] = typeof formattedDate === 'string' ? formattedDate.split('/') : [null, null, null];
+  const [day, month, year] = typeof formattedDate === 'string' && /\d{2}\/\d{2}\/\d{4}/.test(formattedDate) ? formattedDate.split('/') : [null, null, null];
   const originalDate = new Date(`${year}-${month}-${day}`);
   const endDate = new Date(originalDate);
   endDate.setDate(endDate.getDate() + 21);

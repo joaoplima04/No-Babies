@@ -1,4 +1,3 @@
-// App.js
 import React, { useState, useEffect, useContext } from 'react';
 import { createContext } from 'react';
 import { View, Text, SafeAreaView, FlatList, StyleSheet, TouchableOpacity, Button, Switch, Alert } from 'react-native';
@@ -66,7 +65,7 @@ const HomeScreen = () => {
     }
 
     // Navegue para a tela do ciclo atual
-    navigation.navigate('Ciclo atual', { cycle: currentCycle });
+    navigation.navigate('Ciclo atual', { cycle: currentCycle, setCurrentCycle });
   }
 
   return (
@@ -93,14 +92,14 @@ const HomeScreen = () => {
 
 };
 
-const ConfigureCicle = ( {cycle} ) => {
+const ConfigureCicle = () => {
+  const cycle = useCycle();
   const [date, setDate] = useState(new Date());
   const [time, setTime] = useState(new Date());
   const [mode, setMode] = useState('date');
   const [show, setShow] = useState(false);
   const [formattedDate, setFormattedDate] = useState('');
   const navigation = useNavigation();
-  const CycleContext = createContext();
   
   useEffect(() => {
     setFormattedDate(format(date, 'dd/MM/yyyy'));
@@ -137,7 +136,7 @@ const ConfigureCicle = ( {cycle} ) => {
   };
 
   const handleConfirm = () => {
-    setCurrentCycle({
+    cycle.setCurrentCycle({
       startDate: format(date, 'dd/MM/yyyy'),
       time: format(time, 'HH:mm'),
     });
@@ -183,15 +182,28 @@ const ConfirmScreen = ({ route }) => {
   // Retrieve the current cycle information from context
   const { currentCycle } = useContext(CycleContext);
 
-  if (currentCycle) {
-    formattedDate: currentCycle.startDate
-    formattedTime: currentCycle.time
+  let formattedDate, formattedTime;
+
+  // Verifique se o componente foi chamado diretamente da HomeScreen ou através da rota
+  if (route.params) {
+    formattedDate = route.params.formattedDate;
+    formattedTime = route.params.formattedTime;
+  } else if (currentCycle) {
+    formattedDate = currentCycle.startDate;
+    formattedTime = currentCycle.time;
+  } else {
+    // Se nenhum dos parâmetros ou ciclo atual estiver disponível, exiba uma mensagem de erro
+    return (
+      <View>
+        <Text>Nenhum dado disponível. Configurar um ciclo primeiro.</Text>
+        <Button title="Ir para Home" onPress={() => navigation.navigate('Home')} />
+      </View>
+    );
   }
 
-  const { formattedDate, formattedTime } = route.params;
-
   // Converta a data formatada para um formato reconhecido pelo construtor Date
-  const [day, month, year] = formattedDate.split('/');
+  // Verifique se formattedDate é uma string antes de usar o split
+  const [day, month, year] = typeof formattedDate === 'string' ? formattedDate.split('/') : [null, null, null];
   const originalDate = new Date(`${year}-${month}-${day}`);
   const endDate = new Date(originalDate);
   endDate.setDate(endDate.getDate() + 21);

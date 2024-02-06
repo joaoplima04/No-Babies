@@ -8,7 +8,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { HeaderBackButton } from '@react-navigation/elements'
 
-
 const Stack = createStackNavigator();
 const CycleContext = createContext();
 
@@ -20,9 +19,10 @@ const useCycle = () => {
 
 const App = () => {
   const [currentCycle, setCurrentCycle] = useState(null);
+  const [medicationData, setMedicationData] = useState([]);
 
   return (
-    <CycleContext.Provider value={{ currentCycle, setCurrentCycle }}>
+    <CycleContext.Provider value={{ currentCycle, setCurrentCycle, medicationData, setMedicationData }}>
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
         <Stack.Screen name="Home" component={HomeScreen}/>
@@ -49,7 +49,6 @@ const App = () => {
 };
 
 const HomeScreen = () => {
-  const { currentCycle, setCurrentCycle } = useContext(CycleContext);
 
   const cycle = useCycle();
 
@@ -153,12 +152,24 @@ const ConfigureCicle = () => {
         Insira a data e o horário em que você começou seu ciclo
       </Text>
       <View style={styles.btnConfirmar}>
-        <Button onPress={handleConfirm} title="Confirmar" />
+        <TouchableOpacity onPress={handleConfirm} style={styles.button}>
+          <Text style={styles.butaoTexto}>
+            Confirmar
+          </Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.buttonContainer}>
-        <Button onPress={showDatepicker} title="Data" />
-        <Button onPress={showTimepicker} title="Hora" />
-      </View>
+        <TouchableOpacity onPress={showDatepicker} style={[styles.button, {marginRight: 20}]}>
+          <Text style={styles.butaoTexto}>
+            Data
+          </Text>
+        </TouchableOpacity>
+          <TouchableOpacity onPress={showTimepicker} style={styles.button}>
+          <Text style={styles.butaoTexto}>
+            Horário
+          </Text>
+          </TouchableOpacity>
+        </View>
       <Text style={styles.diaHora}>Data: {formattedDate}</Text>
       <Text style={styles.diaHora}>Horário: {format(time, 'HH:mm')}</Text>
       {show && (
@@ -178,9 +189,8 @@ const ConfigureCicle = () => {
 const ConfirmScreen = ({ route }) => {
   const navigation = useNavigation();
 
-  
   // Retrieve the current cycle information from context
-  const { currentCycle } = useContext(CycleContext);
+  const { currentCycle, medicationData, setMedicationData } = useCycle();
 
   let formattedDate, formattedTime;
 
@@ -209,7 +219,6 @@ const ConfirmScreen = ({ route }) => {
   endDate.setDate(endDate.getDate() + 21);
   const startInterval = addDays(endDate, 1)
   const formattedEndDate = format(endDate, 'dd/MM/yyyy');
-  const [medicationData, setMedicationData] = useState([]);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedTime, setSelectedTime] = useState(null);
   const [currentDayId, setCurrentDayId] = useState(null);
@@ -239,8 +248,9 @@ const ConfirmScreen = ({ route }) => {
         protection: ''
       };
     });
-  
-    setMedicationData(data);
+    if (route.params) {
+      setMedicationData(data);
+    }
   }, []); // Remova as dependências aqui
 
   const handleSwitchChange = (id, newValue) => {
@@ -313,6 +323,8 @@ const ConfirmScreen = ({ route }) => {
     )
   );
 };
+
+console.log(medicationData[0])
 
 const renderItem = ({ item }) => {
   return (
@@ -395,6 +407,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
+  button: {
+    backgroundColor: '#FF00FF', // Cor de fundo desejada
+    borderRadius: 5, // Borda arredondada (opcional)
+    padding: 10, // Espaçamento interno
+  },
   butaoTexto: {
     fontSize: 20
   },
@@ -417,6 +434,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     margin: 20,
     marginTop: 40,
   },
@@ -437,7 +455,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ccc',
   },
   listaContainer: {
-    right: 15,
+    right: 5,
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',

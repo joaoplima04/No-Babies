@@ -324,7 +324,6 @@ const ConfirmScreen = ({ route }) => {
   );
 };
 
-console.log(medicationData[0])
 
 const renderItem = ({ item }) => {
   return (

@@ -285,7 +285,6 @@ const ConfirmScreen = ({ route }) => {
   const showAlert = (id) => {
     Alert.alert(
       "Com ou sem proteção?",
-      "Fez amorzinho né safada? Mas me responde foi com ou sem proteção?",
       [
         {
           text: "Com proteção",

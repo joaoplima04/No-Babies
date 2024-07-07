@@ -22,7 +22,7 @@ Clone o repositório:
 
 sh
 Copiar código
-git clone https://github.com/jaoja/NoBabies.git
+git clone https://github.com/joaoplima04/NoBabies.git
 Navegue até o diretório do projeto:
 
 sh
@@ -65,7 +65,7 @@ Abra um Pull Request.
 Licença
 Este projeto está licenciado sob a Licença MIT.
 
-Desenvolvido por Seu Nome.
+Desenvolvido por João Lucas Pereira Lima.
 
 Contato
-Para dúvidas ou sugestões, entre em contato através do email@example.com.
+Para dúvidas ou sugestões, entre em contato através do jaolucasssp@gmail.com.
